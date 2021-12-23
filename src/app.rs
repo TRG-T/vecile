@@ -1,4 +1,5 @@
 use eframe::{egui, epi};
+use std::fs;
 
 /// We derive Deserialize/Serialize so we can persist app state on shutdown.
 #[cfg_attr(feature = "persistence", derive(serde::Deserialize, serde::Serialize))]
@@ -6,10 +7,9 @@ use eframe::{egui, epi};
 pub struct TemplateApp {
     // Example stuff:
     label: String,
-
+    default_path: String
     // this how you opt-out of serialization of a member
-    #[cfg_attr(feature = "persistence", serde(skip))]
-    value: f32,
+    //#[cfg_attr(feature = "persistence", serde(skip))]
 }
 
 impl Default for TemplateApp {
@@ -17,14 +17,14 @@ impl Default for TemplateApp {
         Self {
             // Example stuff:
             label: "Hello World!".to_owned(),
-            value: 2.7,
+            default_path: "./".to_string()
         }
     }
 }
 
 impl epi::App for TemplateApp {
     fn name(&self) -> &str {
-        "eframe template"
+        "Filemng"
     }
 
     /// Called once before the first frame.
@@ -52,7 +52,7 @@ impl epi::App for TemplateApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>) {
-        let Self { label, value } = self;
+        let Self { label, default_path } = self;
 
         // Examples of how to create different panels and windows.
         // Pick whichever suits you.
@@ -78,11 +78,6 @@ impl epi::App for TemplateApp {
                 ui.text_edit_singleline(label);
             });
 
-            ui.add(egui::Slider::new(value, 0.0..=10.0).text("value"));
-            if ui.button("Increment").clicked() {
-                *value += 1.0;
-            }
-
             ui.with_layout(egui::Layout::bottom_up(egui::Align::LEFT), |ui| {
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 0.0;
@@ -95,14 +90,26 @@ impl epi::App for TemplateApp {
         });
 
         egui::CentralPanel::default().show(ctx, |ui| {
-            // The central panel the region left after adding TopPanel's and SidePanel's
-
-            ui.heading("eframe template");
-            ui.hyperlink("https://github.com/emilk/eframe_template");
-            ui.add(egui::github_link_file!(
-                "https://github.com/emilk/eframe_template/blob/master/",
-                "Source code."
-            ));
+            let paths = fs::read_dir(&default_path).unwrap();
+            for path in paths {
+                    if fs::metadata(path.as_ref().unwrap().path())
+                        .unwrap()
+                        .is_dir()
+                    {
+                        if ui.button(path.as_ref().unwrap().path().display()).clicked() {
+                           *default_path = ("./".to_string() + &path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap().to_string()).to_string()
+                        }
+                        if ui.button("Delete").clicked() {
+                            fs::remove_dir(path.as_ref().unwrap().path()).ok();
+                        }
+                    } else {
+                        ui.label(path.as_ref().unwrap().path().display());
+                        if ui.button("Delete").clicked() {
+                            fs::remove_file(path.as_ref().unwrap().path()).ok();
+                        }
+                    }
+                ui.separator();
+            }
             egui::warn_if_debug_build(ui);
         });
 

@@ -7,7 +7,8 @@ use std::fs;
 pub struct TemplateApp {
     // Example stuff:
     label: String,
-    default_path: String
+    default_path: String, 
+    
     // this how you opt-out of serialization of a member
     //#[cfg_attr(feature = "persistence", serde(skip))]
 }
@@ -17,7 +18,7 @@ impl Default for TemplateApp {
         Self {
             // Example stuff:
             label: "Hello World!".to_owned(),
-            default_path: "./".to_string()
+            default_path: "./".to_string(),
         }
     }
 }
@@ -52,7 +53,10 @@ impl epi::App for TemplateApp {
     /// Called each time the UI needs repainting, which may be many times per second.
     /// Put your widgets into a `SidePanel`, `TopPanel`, `CentralPanel`, `Window` or `Area`.
     fn update(&mut self, ctx: &egui::CtxRef, frame: &mut epi::Frame<'_>) {
-        let Self { label, default_path } = self;
+        let Self {
+            label,
+            default_path,
+        } = self;
 
         // Examples of how to create different panels and windows.
         // Pick whichever suits you.
@@ -92,23 +96,24 @@ impl epi::App for TemplateApp {
         egui::CentralPanel::default().show(ctx, |ui| {
             let paths = fs::read_dir(&default_path).unwrap();
             for path in paths {
-                    if fs::metadata(path.as_ref().unwrap().path())
-                        .unwrap()
-                        .is_dir()
+                let path = path.unwrap().path();
+                if fs::metadata(&path).unwrap().is_dir() {
+                    if ui
+                        .button(&path.file_name().unwrap().to_str().unwrap())
+                        .clicked()
                     {
-                        if ui.button(path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap()).clicked() {
-                           default_path.push('/');
-                           default_path.push_str(path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap());
-                        }
-                        if ui.button("Delete").clicked() {
-                            fs::remove_dir(path.as_ref().unwrap().path()).ok();
-                        }
-                    } else {
-                        ui.label(path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap());
-                        if ui.button("Delete").clicked() {
-                            fs::remove_file(path.as_ref().unwrap().path()).ok();
-                        }
+                        default_path.push('/');
+                        default_path.push_str(path.file_name().unwrap().to_str().unwrap());
                     }
+                    if ui.button("Delete").clicked() {
+                        fs::remove_dir(&path).ok();
+                    }
+                } else {
+                    ui.label(&path.file_name().unwrap().to_str().unwrap());
+                    if ui.button("Delete").clicked() {
+                        fs::remove_file(&path).ok();
+                    }
+                }
                 ui.separator();
             }
             egui::warn_if_debug_build(ui);

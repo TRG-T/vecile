@@ -96,14 +96,15 @@ impl epi::App for TemplateApp {
                         .unwrap()
                         .is_dir()
                     {
-                        if ui.button(path.as_ref().unwrap().path().display()).clicked() {
-                           *default_path = ("./".to_string() + &path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap().to_string()).to_string()
+                        if ui.button(path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap()).clicked() {
+                           default_path.push('/');
+                           default_path.push_str(path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap());
                         }
                         if ui.button("Delete").clicked() {
                             fs::remove_dir(path.as_ref().unwrap().path()).ok();
                         }
                     } else {
-                        ui.label(path.as_ref().unwrap().path().display());
+                        ui.label(path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap());
                         if ui.button("Delete").clicked() {
                             fs::remove_file(path.as_ref().unwrap().path()).ok();
                         }

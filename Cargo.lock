@@ -488,14 +488,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "eframe_template"
-version = "0.1.0"
-dependencies = [
- "eframe",
- "serde",
-]
-
-[[package]]
 name = "egui"
 version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -580,6 +572,14 @@ dependencies = [
  "directories-next",
  "egui",
  "ron",
+ "serde",
+]
+
+[[package]]
+name = "filemng"
+version = "0.1.0"
+dependencies = [
+ "eframe",
  "serde",
 ]
 

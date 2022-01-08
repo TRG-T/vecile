@@ -57,13 +57,10 @@ impl epi::App for TemplateApp {
 
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             ui.horizontal(|ui| {
-                // egui::menu::bar(ui, |ui| {
-                //     egui::menu::menu(ui, "File", |ui| {
-                //         if ui.button("Quit").clicked() {
-                //             frame.quit();
-                //         }
-                //     });
-                // });
+                if ui.button("Back").clicked() {
+                    let (start, _last_word) = default_path.rsplit_once('/').unwrap();
+                    *default_path = start.to_string()
+                }
                 ui.label(&default_path);
             })
         });

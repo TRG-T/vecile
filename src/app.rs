@@ -67,28 +67,30 @@ impl epi::App for TemplateApp {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             let paths = fs::read_dir(&default_path).unwrap();
-            for path in paths {
-                let path = path.unwrap().path();
-                if fs::metadata(&path).unwrap().is_dir() {
-                    if ui
-                        .button(&path.file_name().unwrap().to_str().unwrap())
-                        .clicked()
-                    {
-                        default_path.push('/');
-                        default_path.push_str(path.file_name().unwrap().to_str().unwrap());
+            egui::Grid::new("files").show(ui, |ui| {
+                for path in paths {
+                    let path = path.unwrap().path();
+                    if fs::metadata(&path).unwrap().is_dir() {
+                        if ui
+                            .button(&path.file_name().unwrap().to_str().unwrap())
+                            .clicked()
+                        {
+                            default_path.push('/');
+                            default_path.push_str(path.file_name().unwrap().to_str().unwrap());
+                        }
+                        if ui.button("Delete").clicked() {
+                            fs::remove_dir(&path).ok();
+                        }
+                    } else {
+                        ui.label(&path.file_name().unwrap().to_str().unwrap());
+                        if ui.button("Delete").clicked() {
+                            fs::remove_file(&path).ok();
+                        }
                     }
-                    if ui.button("Delete").clicked() {
-                        fs::remove_dir(&path).ok();
-                    }
-                } else {
-                    ui.label(&path.file_name().unwrap().to_str().unwrap());
-                    if ui.button("Delete").clicked() {
-                        fs::remove_file(&path).ok();
-                    }
+                    ui.end_row();
                 }
-                ui.separator();
-            }
-            egui::warn_if_debug_build(ui);
+                egui::warn_if_debug_build(ui);
+            });
         });
 
         if false {

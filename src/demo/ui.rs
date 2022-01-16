@@ -56,7 +56,7 @@ fn draw_files<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
                 .files
                 .files
                 .iter()
-                .map(|i| ListItem::new(vec![Spans::from(Span::raw(i))]))
+                .map(|i| ListItem::new(vec![Spans::from(Span::raw(&i.name))]))
                 .collect();
             let tasks = List::new(tasks)
                 .block(Block::default().borders(Borders::ALL).title(app.default_path.as_ref()))

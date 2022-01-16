@@ -23,20 +23,25 @@ impl<'a> TabsState<'a> {
     }
 }
 
+pub struct File {
+    pub name: String,
+    pub is_dir: bool,
+}
+
 pub struct StatefulList {
     pub state: ListState,
-    pub files: Vec<String>,
+    pub files: Vec<File>,
 }
 
 impl StatefulList {
     pub fn new(default_path: &String) -> StatefulList {
-        let mut files = vec![];
+        let mut files: Vec<File> = vec![];
         let paths = fs::read_dir(default_path).unwrap();
         for path in paths {
             if fs::metadata(path.as_ref().unwrap().path()).unwrap().is_dir() {
-                files.push(path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap().to_owned() + "/")
+                files.push(File { name: path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap().to_owned() + "/", is_dir: true })
             } else {
-                files.push(path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap().to_owned())
+                files.push( File { name: path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap().to_owned(), is_dir: false })
             }
 
         }
@@ -124,8 +129,8 @@ impl<'a> App<'a> {
     
     pub fn on_enter(&mut self) {
         self.default_path.push('/');
-        let _ = &self.files.files[self.files.state.selected().unwrap()].pop();
-        self.default_path.push_str(&self.files.files[self.files.state.selected().unwrap()]);
+        let _ = &self.files.files[self.files.state.selected().unwrap()].name.pop();
+        self.default_path.push_str(&self.files.files[self.files.state.selected().unwrap()].name);
         self.files = StatefulList::new(&self.default_path)
     }
 

@@ -1,22 +1,13 @@
 [package]
 name = "filemng"
-version = "0.1.0"
+version = "1.0.0"
 authors = ["TRGT"]
 edition = "2018"
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
-eframe = "0.15.0" 
-serde = { version = "1", features = ["derive"], optional = true }
+tui = { version = "0.16.0", default-features = false, features = ['crossterm'] }
+crossterm = "0.22.1"
 
-[features]
-default = []
-persistence = ["eframe/persistence", "serde"]
-
-[profile.release]
-opt-level = 2
 
 
 

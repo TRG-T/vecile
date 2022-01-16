@@ -30,7 +30,6 @@ struct Cli {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let cli = Cli { tick_rate: 250, enhanced_graphics: true };
-    let default_path = String::from(".");
 
     enable_raw_mode()?;
 
@@ -58,7 +57,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
     });
 
-    let mut app = App::new(&default_path, "Filemng", cli.enhanced_graphics);
+    let mut app = App::new("Filemng", cli.enhanced_graphics);
 
     terminal.clear()?;
     loop {

@@ -1,5 +1,5 @@
-use tui::widgets::ListState;
 use std::fs;
+use tui::widgets::ListState;
 
 pub struct TabsState<'a> {
     pub titles: Vec<&'a str>,
@@ -38,17 +38,31 @@ impl StatefulList {
         let mut files: Vec<File> = vec![];
         let paths = fs::read_dir(default_path).unwrap();
         for path in paths {
-            if fs::metadata(path.as_ref().unwrap().path()).unwrap().is_dir() {
-                files.push(File { name: path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap().to_owned() + "/", is_dir: true })
+            let file_name = path
+                .as_ref()
+                .unwrap()
+                .file_name()
+                .to_string_lossy()
+                .to_string();
+            if fs::metadata(path.as_ref().unwrap().path())
+                .unwrap()
+                .is_dir()
+            {
+                files.push(File {
+                    name: file_name + "/",
+                    is_dir: true,
+                })
             } else {
-                files.push( File { name: path.as_ref().unwrap().path().file_name().unwrap().to_str().unwrap().to_owned(), is_dir: false })
+                files.push(File {
+                    name: file_name,
+                    is_dir: false,
+                })
             }
-
         }
         StatefulList {
             state: ListState::default(),
             files,
-        } 
+        }
     }
 
     pub fn next(&mut self) {
@@ -90,14 +104,13 @@ pub struct App<'a> {
 }
 
 impl<'a> App<'a> {
-    pub fn new(default_path: &'a String, title: &'a str, enhanced_graphics: bool) -> App<'a> {
-
+    pub fn new(title: &'a str, enhanced_graphics: bool) -> App<'a> {
         App {
             title,
             should_quit: false,
             tabs: TabsState::new(vec!["Files", "Tab1"]),
             default_path: String::from("./"),
-            files: StatefulList::new(default_path),
+            files: StatefulList::new(&String::from("./")),
             enhanced_graphics,
         }
     }
@@ -126,20 +139,21 @@ impl<'a> App<'a> {
             _ => {}
         }
     }
-    
+
     pub fn on_enter(&mut self) {
         let file = &self.files.files[self.files.state.selected().unwrap()];
         if file.is_dir {
             self.default_path.push_str(&file.name);
             self.files = StatefulList::new(&self.default_path)
         }
-        
     }
 
     pub fn on_esc(&mut self) {
-        if self.default_path == "./" { return };
+        if self.default_path == "./" {
+            return;
+        };
         self.default_path.pop();
-        let (start, _last_word) = self.default_path.rsplit_once('/').unwrap();
+        let (start, _) = self.default_path.rsplit_once('/').unwrap();
         self.default_path = start.to_string();
         self.default_path.push('/');
         self.files = StatefulList::new(&self.default_path)

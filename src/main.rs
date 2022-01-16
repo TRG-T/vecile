@@ -1,5 +1,7 @@
-mod demo;
-use crate::demo::{ui, App};
+mod app;
+use crate::app::App;
+mod ui;
+use crate::ui::draw;
 use crossterm::{
     event::{self, DisableMouseCapture, EnableMouseCapture, Event as CEvent, KeyCode},
     execute,
@@ -60,7 +62,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     terminal.clear()?;
     loop {
-        terminal.draw(|f| ui::draw(f, &mut app))?;
+        terminal.draw(|f| draw(f, &mut app))?;
         match rx.recv()? {
             Event::Input(event) => match event.code {
                 KeyCode::Char('q') => {

@@ -96,7 +96,7 @@ impl<'a> App<'a> {
             title,
             should_quit: false,
             tabs: TabsState::new(vec!["Files", "Tab1"]),
-            default_path: String::from("."),
+            default_path: String::from("./"),
             files: StatefulList::new(default_path),
             enhanced_graphics,
         }
@@ -128,15 +128,20 @@ impl<'a> App<'a> {
     }
     
     pub fn on_enter(&mut self) {
-        self.default_path.push('/');
-        let _ = &self.files.files[self.files.state.selected().unwrap()].name.pop();
-        self.default_path.push_str(&self.files.files[self.files.state.selected().unwrap()].name);
-        self.files = StatefulList::new(&self.default_path)
+        let file = &self.files.files[self.files.state.selected().unwrap()];
+        if file.is_dir {
+            self.default_path.push_str(&file.name);
+            self.files = StatefulList::new(&self.default_path)
+        }
+        
     }
 
     pub fn on_esc(&mut self) {
+        if self.default_path == "./" { return };
+        self.default_path.pop();
         let (start, _last_word) = self.default_path.rsplit_once('/').unwrap();
         self.default_path = start.to_string();
+        self.default_path.push('/');
         self.files = StatefulList::new(&self.default_path)
     }
 }

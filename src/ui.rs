@@ -1,4 +1,4 @@
-use crate::App;
+use crate::app::{App};
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
@@ -41,30 +41,17 @@ fn draw_first_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
 }
 
 fn draw_files<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let chunks = Layout::default()
-        .constraints(vec![Constraint::Percentage(100)])
-        .direction(Direction::Horizontal)
-        .split(area);
-    {
-        let chunks = Layout::default()
-            .constraints([Constraint::Percentage(100)].as_ref())
-            .split(chunks[0]);
-        {
-
-            // Draw tasks
-            let tasks: Vec<ListItem> = app
-                .files
-                .files
-                .iter()
-                .map(|i| ListItem::new(vec![Spans::from(Span::raw(&i.name))]))
-                .collect();
-            let tasks = List::new(tasks)
-                .block(Block::default().borders(Borders::ALL).title(app.default_path.as_ref()))
-                .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-                .highlight_symbol("> ");
-            f.render_stateful_widget(tasks, chunks[0], &mut app.files.state);
-        }
-    }
+    let tasks: Vec<ListItem> = app
+        .files
+        .files
+        .iter()
+        .map(|file| ListItem::new(vec![Spans::from(Span::raw(&file.name))]))
+        .collect();
+    let tasks = List::new(tasks)
+        .block(Block::default().borders(Borders::ALL).title(app.default_path.as_ref()))
+        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
+        .highlight_symbol("> ");
+    f.render_stateful_widget(tasks, area, &mut app.files.state);
 }
 
 fn draw_second_tab<B: Backend>(f: &mut Frame<B>, _app: &mut App, area: Rect) {

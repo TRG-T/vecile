@@ -1,19 +1,16 @@
-use crate::app::{App};
+use crate::app::App;
 use tui::{
     backend::Backend,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::{Span, Spans},
-    widgets::{
-        Block, Borders, Cell, List, ListItem,
-        Row, Table, Tabs,
-    },
+    widgets::{Block, Borders, Cell, Row, Table, Tabs},
     Frame,
 };
 
 pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
     let chunks = Layout::default()
-        .constraints([Constraint::Length(3), Constraint::Min(0)].as_ref())
+        .constraints([Constraint::Length(3), Constraint::Min(0)])
         .split(f.size());
     let titles = app
         .tabs
@@ -35,23 +32,29 @@ pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
 
 fn draw_first_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
     let chunks = Layout::default()
-        .constraints([Constraint::Percentage(100)].as_ref())
+        .constraints([Constraint::Percentage(100)])
         .split(area);
     draw_files(f, app, chunks[0]);
 }
 
 fn draw_files<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let tasks: Vec<ListItem> = app
+    let files: Vec<Row> = app
         .files
         .files
         .iter()
-        .map(|file| ListItem::new(vec![Spans::from(Span::raw(&file.name))]))
+        .map(|file| Row::new(vec![file.name.as_str(), file.size.as_str()]))
         .collect();
-    let tasks = List::new(tasks)
-        .block(Block::default().borders(Borders::ALL).title(app.default_path.as_ref()))
+    let table = Table::new(files)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .title(app.default_path.as_ref()),
+        )
+        .header(Row::new(vec!["Name", "Size"]).bottom_margin(1))
+        .widths(&[Constraint::Length(15), Constraint::Length(15)])
         .highlight_style(Style::default().add_modifier(Modifier::BOLD))
         .highlight_symbol("> ");
-    f.render_stateful_widget(tasks, area, &mut app.files.state);
+    f.render_stateful_widget(table, area, &mut app.files.state);
 }
 
 fn draw_second_tab<B: Backend>(f: &mut Frame<B>, _app: &mut App, area: Rect) {

@@ -1,5 +1,7 @@
 use std::fs;
-use tui::widgets::ListState;
+use tui::widgets::{TableState};
+use filesize::{file_real_size};
+use fs_extra::dir::get_size;
 
 pub struct TabsState<'a> {
     pub titles: Vec<&'a str>,
@@ -26,10 +28,11 @@ impl<'a> TabsState<'a> {
 pub struct File {
     pub name: String,
     pub is_dir: bool,
+    pub size: String,
 }
 
 pub struct StatefulList {
-    pub state: ListState,
+    pub state: TableState,
     pub files: Vec<File>,
 }
 
@@ -44,23 +47,32 @@ impl StatefulList {
                 .file_name()
                 .to_string_lossy()
                 .to_string();
+            let mut file_size: String;
+            let file_path: String = default_path.to_owned() + file_name.as_str();
             if fs::metadata(path.as_ref().unwrap().path())
                 .unwrap()
                 .is_dir()
             {
+                file_size = (get_size(file_path).unwrap()).to_string();
+                file_size.push_str(" B");
                 files.push(File {
                     name: file_name + "/",
                     is_dir: true,
+                    size: file_size,
                 })
             } else {
+                
+                file_size = (file_real_size(file_path).unwrap()).to_string();
+                file_size.push_str(" B");
                 files.push(File {
                     name: file_name,
                     is_dir: false,
+                    size: file_size,
                 })
             }
         }
         StatefulList {
-            state: ListState::default(),
+            state: TableState::default(),
             files,
         }
     }

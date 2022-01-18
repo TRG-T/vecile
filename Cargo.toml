@@ -7,6 +7,8 @@ edition = "2018"
 [dependencies]
 tui = { version = "0.16.0", default-features = false, features = ['crossterm'] }
 crossterm = "0.22.1"
+filesize = "0.2.0"
+fs_extra = "1.2.0"
 
 
 

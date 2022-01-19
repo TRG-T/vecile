@@ -37,7 +37,7 @@ pub struct StatefulList {
 }
 
 impl StatefulList {
-    pub fn new(default_path: &String) -> StatefulList {
+    pub fn new(default_path: &str) -> StatefulList {
         let mut files: Vec<File> = vec![];
         let paths = fs::read_dir(default_path).unwrap();
         for path in paths {
@@ -144,11 +144,8 @@ impl<'a> App<'a> {
     }
 
     pub fn on_key(&mut self, c: char) {
-        match c {
-            'q' => {
-                self.should_quit = true;
-            }
-            _ => {}
+        if c == 'q' {
+             self.should_quit = true;
         }
     }
 

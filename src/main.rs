@@ -34,8 +34,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     terminal.clear()?;
     loop {
         terminal.draw(|f| draw(f, &mut app))?;
-        match read()? {
-            Event::Key(event) => match event.code {        
+        if let Event::Key(event ) = read()? { 
+            match event.code {        
                 KeyCode::Char(c) => app.on_key(c),
                 KeyCode::Left => app.on_left(),
                 KeyCode::Up => app.on_up(),
@@ -45,7 +45,6 @@ fn main() -> Result<(), Box<dyn Error>> {
                 KeyCode::Esc => app.on_esc(),
                 _ => {}
             }
-            _ => {}
         }
 
         if app.should_quit {

@@ -1,7 +1,7 @@
-use std::fs;
-use tui::widgets::{TableState};
-use filesize::{file_real_size};
+use filesize::file_real_size;
 use fs_extra::dir::get_size;
+use tui::widgets::{TableState};
+use std::fs;
 
 pub struct TabsState<'a> {
     pub titles: Vec<&'a str>,
@@ -29,6 +29,7 @@ pub struct File {
     pub name: String,
     pub is_dir: bool,
     pub size: String,
+    pub path: String
 }
 
 pub struct StatefulList {
@@ -53,21 +54,22 @@ impl StatefulList {
                 .unwrap()
                 .is_dir()
             {
-                file_size = (get_size(file_path).unwrap()).to_string();
+                file_size = (get_size(&file_path).unwrap()).to_string();
                 file_size.push_str(" B");
                 files.push(File {
                     name: file_name + "/",
                     is_dir: true,
                     size: file_size,
+                    path: file_path,
                 })
             } else {
-                
-                file_size = (file_real_size(file_path).unwrap()).to_string();
+                file_size = (file_real_size(&file_path).unwrap()).to_string();
                 file_size.push_str(" B");
                 files.push(File {
                     name: file_name,
                     is_dir: false,
                     size: file_size,
+                    path: file_path,
                 })
             }
         }
@@ -144,10 +146,23 @@ impl<'a> App<'a> {
     }
 
     pub fn on_key(&mut self, c: char) {
-        if c == 'q' {
-             self.should_quit = true;
+        match c {
+            'q' => {
+                self.should_quit = true;
+            },
+            'd' => {
+                let file = &self.files.files[self.files.state.selected().unwrap()];
+                if file.is_dir {
+                    fs::remove_dir_all(&file.path).ok();
+                } else {
+                    fs::remove_file(&file.path).ok();
+                }
+                self.files = StatefulList::new(&self.default_path);
+            }
+            _ => {}
         }
     }
+
 
     pub fn on_enter(&mut self) {
         let file = &self.files.files[self.files.state.selected().unwrap()];

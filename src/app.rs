@@ -1,7 +1,22 @@
-use filesize::file_real_size;
 use fs_extra::dir::get_size;
 use tui::widgets::{TableState};
 use std::fs;
+
+
+fn convert_size(size: u64) -> String {
+    let mut file_size: String;
+    if size > 1000000 {
+        file_size = (size / 1000000).to_string();
+        file_size.push_str(" MB")
+    } else if size > 1000 {
+        file_size = (size / 1000).to_string();
+        file_size.push_str(" kB")
+    } else {
+        file_size = size.to_string();
+        file_size.push_str(" B")
+    }
+    file_size
+}
 
 pub struct TabsState<'a> {
     pub titles: Vec<&'a str>,
@@ -48,27 +63,23 @@ impl StatefulList {
                 .file_name()
                 .to_string_lossy()
                 .to_string();
-            let mut file_size: String;
             let file_path: String = default_path.to_owned() + file_name.as_str();
+            let size = get_size(&file_path).unwrap();
             if fs::metadata(path.as_ref().unwrap().path())
                 .unwrap()
                 .is_dir()
             {
-                file_size = (get_size(&file_path).unwrap()).to_string();
-                file_size.push_str(" B");
                 files.push(File {
                     name: file_name + "/",
                     is_dir: true,
-                    size: file_size,
+                    size: convert_size(size),
                     path: file_path,
                 })
             } else {
-                file_size = (file_real_size(&file_path).unwrap()).to_string();
-                file_size.push_str(" B");
                 files.push(File {
                     name: file_name,
                     is_dir: false,
-                    size: file_size,
+                    size: convert_size(size),
                     path: file_path,
                 })
             }

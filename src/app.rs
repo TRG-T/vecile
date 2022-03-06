@@ -18,28 +18,6 @@ fn convert_size(size: u64) -> String {
     file_size
 }
 
-pub struct TabsState<'a> {
-    pub titles: Vec<&'a str>,
-    pub index: usize,
-}
-
-impl<'a> TabsState<'a> {
-    pub fn new(titles: Vec<&'a str>) -> TabsState {
-        TabsState { titles, index: 0 }
-    }
-    pub fn next(&mut self) {
-        self.index = (self.index + 1) % self.titles.len();
-    }
-
-    pub fn previous(&mut self) {
-        if self.index > 0 {
-            self.index -= 1;
-        } else {
-            self.index = self.titles.len() - 1;
-        }
-    }
-}
-
 pub struct File {
     pub name: String,
     pub is_dir: bool,
@@ -122,7 +100,6 @@ impl StatefulList {
 pub struct App<'a> {
     pub title: &'a str,
     pub should_quit: bool,
-    pub tabs: TabsState<'a>,
     pub default_path: String,
     pub files: StatefulList,
     pub enhanced_graphics: bool,
@@ -133,7 +110,6 @@ impl<'a> App<'a> {
         App {
             title,
             should_quit: false,
-            tabs: TabsState::new(vec!["Files", "Tab1"]),
             default_path: String::from("./"),
             files: StatefulList::new(&String::from("./")),
             enhanced_graphics,
@@ -146,14 +122,6 @@ impl<'a> App<'a> {
 
     pub fn on_down(&mut self) {
         self.files.next();
-    }
-
-    pub fn on_right(&mut self) {
-        self.tabs.next();
-    }
-
-    pub fn on_left(&mut self) {
-        self.tabs.previous();
     }
 
     pub fn on_key(&mut self, c: char) {

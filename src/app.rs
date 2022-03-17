@@ -101,6 +101,7 @@ pub struct App<'a> {
     pub title: &'a str,
     pub should_quit: bool,
     pub default_path: String,
+    pub popup: Popup<'a>,
     pub files: StatefulList,
     pub enhanced_graphics: bool,
 }
@@ -111,17 +112,32 @@ impl<'a> App<'a> {
             title,
             should_quit: false,
             default_path: String::from("./"),
+            popup: Popup::new("default", PopupType::Default, false, PopupState::new(vec!["", ""])),
             files: StatefulList::new(&String::from("./")),
             enhanced_graphics,
         }
     }
 
     pub fn on_up(&mut self) {
-        self.files.previous();
+        if !self.popup.visible {
+            self.files.previous();
+        } else {
+            self.popup.state.previous()
+        }
     }
 
     pub fn on_down(&mut self) {
-        self.files.next();
+        if !self.popup.visible {
+            self.files.next();
+        } else {
+            self.popup.state.next()
+        }
+    }
+
+    pub fn on_right(&mut self) {
+    }
+
+    pub fn on_left(&mut self) {
     }
 
     pub fn on_key(&mut self, c: char) {
@@ -130,13 +146,7 @@ impl<'a> App<'a> {
                 self.should_quit = true;
             },
             'd' => {
-                let file = &self.files.files[self.files.state.selected().unwrap()];
-                if file.is_dir {
-                    fs::remove_dir_all(&file.path).ok();
-                } else {
-                    fs::remove_file(&file.path).ok();
-                }
-                self.files = StatefulList::new(&self.default_path);
+                self.popup = Popup::new("Delete file", PopupType::DeleteFile, true, PopupState::new(vec!["Delete", "Cancel"]));
             }
             _ => {}
         }
@@ -144,10 +154,25 @@ impl<'a> App<'a> {
 
 
     pub fn on_enter(&mut self) {
-        let file = &self.files.files[self.files.state.selected().unwrap()];
-        if file.is_dir {
-            self.default_path.push_str(&file.name);
-            self.files = StatefulList::new(&self.default_path)
+        if !self.popup.visible {
+            let file = &self.files.files[self.files.state.selected().unwrap()];
+            if file.is_dir {
+                self.default_path.push_str(&file.name);
+                self.files = StatefulList::new(&self.default_path)
+            }
+        } else {
+            match self.popup.state.state.selected() {
+                Some(0) => self.popup.visible = false,
+                Some(1) => {                 
+                    let file = &self.files.files[self.files.state.selected().unwrap()];
+                    if file.is_dir {
+                        fs::remove_dir_all(&file.path).ok();
+                    } else {
+                        fs::remove_file(&file.path).ok();
+                    }
+                    self.files = StatefulList::new(&self.default_path);},
+                _ => {}
+            }
         }
     }
 
@@ -160,5 +185,42 @@ impl<'a> App<'a> {
         self.default_path = start.to_string();
         self.default_path.push('/');
         self.files = StatefulList::new(&self.default_path)
+    }
+}
+
+pub enum PopupType {
+    Default,
+    DeleteFile,
+}
+
+pub struct Popup<'a> {
+    pub title: &'a str,
+    pub p_type: PopupType,
+    pub visible: bool,
+    pub state: PopupState<'a>,
+}
+
+impl<'a> Popup<'a> {
+    pub fn new(title: &'a str, p_type: PopupType, visible: bool, state: PopupState<'a>) -> Popup<'a> {
+        Popup { title, p_type, visible, state }
+    }
+}
+
+pub struct PopupState<'a> {
+    pub titles: Vec<&'a str>,
+    pub index: usize,
+    pub state: TableState,
+}
+
+impl<'a> PopupState<'a> {
+    pub fn new(titles: Vec<&'a str>) -> PopupState {
+        PopupState { titles, index: 0, state: TableState::default() }
+    }
+    pub fn next(&mut self) {
+        self.state.select(Some(1))
+    }
+
+    pub fn previous(&mut self) {
+        self.state.select(Some(0))
     }
 }

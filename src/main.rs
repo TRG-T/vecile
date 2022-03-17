@@ -37,7 +37,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         if let Event::Key(event ) = read()? { 
             match event.code {        
                 KeyCode::Char(c) => app.on_key(c),
+                KeyCode::Left => app.on_left(),
                 KeyCode::Up => app.on_up(),
+                KeyCode::Right => app.on_right(),
                 KeyCode::Down => app.on_down(),
                 KeyCode::Enter => app.on_enter(),
                 KeyCode::Esc => app.on_esc(),

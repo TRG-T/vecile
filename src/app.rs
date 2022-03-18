@@ -122,7 +122,7 @@ impl<'a> App<'a> {
         if !self.popup.visible {
             self.files.previous();
         } else {
-            self.popup.previous()
+            self.popup.state.select(Some(0));
         }
     }
 
@@ -130,7 +130,7 @@ impl<'a> App<'a> {
         if !self.popup.visible {
             self.files.next();
         } else {
-            self.popup.next()
+            self.popup.state.select(Some(1));
         }
     }
 
@@ -204,33 +204,5 @@ pub struct Popup<'a> {
 impl<'a> Popup<'a> {
     pub fn new(title: &'a str, p_type: PopupType, visible: bool, state: TableState, titles: Vec<&'a str>) -> Popup<'a> {
         Popup { title, p_type, visible, state, titles }
-    }
-
-    pub fn next(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i >= self.titles.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
-    }
-
-    pub fn previous(&mut self) {
-        let i = match self.state.selected() {
-            Some(i) => {
-                if i == 0 {
-                    self.titles.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
-        };
-        self.state.select(Some(i));
     }
 }

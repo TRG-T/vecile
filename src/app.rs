@@ -112,7 +112,7 @@ impl<'a> App<'a> {
             title,
             should_quit: false,
             default_path: String::from("./"),
-            popup: Popup::new("default", PopupType::Default, false, PopupState::new(vec!["", ""])),
+            popup: Popup::new("default", PopupType::Default, false, TableState::default(), vec!["", ""]),
             files: StatefulList::new(&String::from("./")),
             enhanced_graphics,
         }
@@ -122,7 +122,7 @@ impl<'a> App<'a> {
         if !self.popup.visible {
             self.files.previous();
         } else {
-            self.popup.state.previous()
+            self.popup.previous()
         }
     }
 
@@ -130,7 +130,7 @@ impl<'a> App<'a> {
         if !self.popup.visible {
             self.files.next();
         } else {
-            self.popup.state.next()
+            self.popup.next()
         }
     }
 
@@ -146,7 +146,7 @@ impl<'a> App<'a> {
                 self.should_quit = true;
             },
             'd' => {
-                self.popup = Popup::new("Delete file", PopupType::DeleteFile, true, PopupState::new(vec!["Delete", "Cancel"]));
+                self.popup = Popup::new("Delete file", PopupType::DeleteFile, true, TableState::default(), vec!["Delete", "Cancel"]);
             }
             _ => {}
         }
@@ -161,7 +161,7 @@ impl<'a> App<'a> {
                 self.files = StatefulList::new(&self.default_path)
             }
         } else {
-            match self.popup.state.state.selected() {
+            match self.popup.state.selected() {
                 Some(0) => self.popup.visible = false,
                 Some(1) => {                 
                     let file = &self.files.files[self.files.state.selected().unwrap()];
@@ -195,32 +195,42 @@ pub enum PopupType {
 
 pub struct Popup<'a> {
     pub title: &'a str,
+    pub titles: Vec<&'a str>,
     pub p_type: PopupType,
     pub visible: bool,
-    pub state: PopupState<'a>,
-}
-
-impl<'a> Popup<'a> {
-    pub fn new(title: &'a str, p_type: PopupType, visible: bool, state: PopupState<'a>) -> Popup<'a> {
-        Popup { title, p_type, visible, state }
-    }
-}
-
-pub struct PopupState<'a> {
-    pub titles: Vec<&'a str>,
-    pub index: usize,
     pub state: TableState,
 }
 
-impl<'a> PopupState<'a> {
-    pub fn new(titles: Vec<&'a str>) -> PopupState {
-        PopupState { titles, index: 0, state: TableState::default() }
+impl<'a> Popup<'a> {
+    pub fn new(title: &'a str, p_type: PopupType, visible: bool, state: TableState, titles: Vec<&'a str>) -> Popup<'a> {
+        Popup { title, p_type, visible, state, titles }
     }
+
     pub fn next(&mut self) {
-        self.state.select(Some(1))
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i >= self.titles.len() - 1 {
+                    0
+                } else {
+                    i + 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
     }
 
     pub fn previous(&mut self) {
-        self.state.select(Some(0))
+        let i = match self.state.selected() {
+            Some(i) => {
+                if i == 0 {
+                    self.titles.len() - 1
+                } else {
+                    i - 1
+                }
+            }
+            None => 0,
+        };
+        self.state.select(Some(i));
     }
 }

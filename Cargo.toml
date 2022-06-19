@@ -9,6 +9,7 @@ tui = "0.18"
 crossterm = "0.23"
 filesize = "0.2"
 fs_extra = "1.2"
+rustbox = "0.11.0"
 
 
 

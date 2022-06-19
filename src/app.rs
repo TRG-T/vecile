@@ -1,7 +1,6 @@
 use fs_extra::dir::get_size;
 use tui::widgets::{TableState};
-use std::fs;
-
+use std::fs::{remove_file, remove_dir_all, read_dir, metadata};
 
 fn convert_size(size: u64) -> String {
     let mut file_size: String;
@@ -33,7 +32,7 @@ pub struct StatefulList {
 impl StatefulList {
     pub fn new(default_path: &str) -> StatefulList {
         let mut files: Vec<File> = vec![];
-        let paths = fs::read_dir(default_path).unwrap();
+        let paths = read_dir(default_path).unwrap();
         for path in paths {
             let file_name = path
                 .as_ref()
@@ -42,22 +41,22 @@ impl StatefulList {
                 .to_string_lossy()
                 .to_string();
             let file_path: String = default_path.to_owned() + file_name.as_str();
-            let size = get_size(&file_path).unwrap();
-            if fs::metadata(path.as_ref().unwrap().path())
+            let size = convert_size(get_size(&file_path).unwrap());
+            if metadata(path.as_ref().unwrap().path())
                 .unwrap()
                 .is_dir()
             {
                 files.push(File {
                     name: file_name + "/",
                     is_dir: true,
-                    size: convert_size(size),
+                    size,
                     path: file_path,
                 })
             } else {
                 files.push(File {
                     name: file_name,
                     is_dir: false,
-                    size: convert_size(size),
+                    size,
                     path: file_path,
                 })
             }
@@ -112,7 +111,7 @@ impl<'a> App<'a> {
             title,
             should_quit: false,
             default_path: String::from("./"),
-            popup: Popup::new("default", PopupType::Default, false, TableState::default(), vec!["", ""]),
+            popup: Popup::new("default", PopupType::Default, false, TableState::default(), vec![]),
             files: StatefulList::new(&String::from("./")),
             enhanced_graphics,
         }
@@ -166,9 +165,9 @@ impl<'a> App<'a> {
                 Some(1) => {                 
                     let file = &self.files.files[self.files.state.selected().unwrap()];
                     if file.is_dir {
-                        fs::remove_dir_all(&file.path).ok();
+                        remove_dir_all(&file.path).ok();
                     } else {
-                        fs::remove_file(&file.path).ok();
+                        remove_file(&file.path).ok();
                     }
                     self.files = StatefulList::new(&self.default_path);},
                 _ => {}
@@ -195,14 +194,14 @@ pub enum PopupType {
 
 pub struct Popup<'a> {
     pub title: &'a str,
-    pub titles: Vec<&'a str>,
+    pub choices: Vec<&'a str>,
     pub popup_type: PopupType,
     pub visible: bool,
     pub state: TableState,
 }
 
 impl<'a> Popup<'a> {
-    pub fn new(title: &'a str, popup_type: PopupType, visible: bool, state: TableState, titles: Vec<&'a str>) -> Popup<'a> {
-        Popup { title, popup_type, visible, state, titles }
+    pub fn new(title: &'a str, popup_type: PopupType, visible: bool, state: TableState, choices: Vec<&'a str>) -> Popup<'a> {
+        Popup { title, popup_type, visible, state, choices }
     }
 }

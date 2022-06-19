@@ -57,7 +57,7 @@ fn draw_popup<B: Backend>(
             .as_ref(),
         )
         .split(vertical[1])[1];
-    match app.popup.p_type {
+    match app.popup.popup_type {
         PopupType::DeleteFile => draw_delete_popup(f, app, horizontal, block),
         _ => {}
     }

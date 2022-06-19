@@ -154,7 +154,7 @@ impl<'a> App<'a> {
 
 
     pub fn on_enter(&mut self) {
-        if !self.popup.visible {
+        if !self.popup.visible && self.files.state.selected() != None {
             let file = &self.files.files[self.files.state.selected().unwrap()];
             if file.is_dir {
                 self.default_path.push_str(&file.name);
@@ -196,13 +196,13 @@ pub enum PopupType {
 pub struct Popup<'a> {
     pub title: &'a str,
     pub titles: Vec<&'a str>,
-    pub p_type: PopupType,
+    pub popup_type: PopupType,
     pub visible: bool,
     pub state: TableState,
 }
 
 impl<'a> Popup<'a> {
-    pub fn new(title: &'a str, p_type: PopupType, visible: bool, state: TableState, titles: Vec<&'a str>) -> Popup<'a> {
-        Popup { title, p_type, visible, state, titles }
+    pub fn new(title: &'a str, popup_type: PopupType, visible: bool, state: TableState, titles: Vec<&'a str>) -> Popup<'a> {
+        Popup { title, popup_type, visible, state, titles }
     }
 }

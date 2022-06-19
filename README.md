@@ -3,7 +3,7 @@
 
 ## Tech Stack
 
-[tui-rs](https://github.com/fdehau/tui-rs), [crossterm](https://github.com/crossterm-rs/crossterm)
+[tui-rs](https://github.com/fdehau/tui-rs), [crossterm](https://github.com/crossterm-rs/crossterm), [rustbox](https://github.com/kjrandez/rustbox/tree/win-dev)
 
 
 ## Development plans

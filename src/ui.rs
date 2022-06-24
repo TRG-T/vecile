@@ -1,126 +1,60 @@
 use crate::app::{App, PopupType};
-use tui::{
-    backend::Backend,
-    layout::{Constraint, Direction, Layout, Rect},
-    style::{Modifier, Style},
-    widgets::{Block, Borders, Clear, Row, Table},
-    Frame,
-};
+use console_engine::{pixel::pxl_fg, rect_style::BorderStyle, Color, ConsoleEngine};
+use std::collections::HashMap;
 
-pub fn draw<B: Backend>(f: &mut Frame<B>, app: &mut App) {
-    let chunks = Layout::default()
-        .constraints([Constraint::Min(0)])
-        .split(f.size());
-    draw_first_tab(f, app, chunks[0]);
-}
+pub fn draw(app: &App, engine: &mut ConsoleEngine, height: i32, width: i32) {
+    draw_files(&app, engine, height as usize);
+    engine.rect_border(0, 0, width+2, height+2, BorderStyle::new_light());
+    engine.print(2, 0, &format!("{}", app.title));
+    engine.print(15, 0, &format!("{}", app.path));
+    engine.print(width-50, 0, &format!("height: {}, width: {}", engine.get_height(), engine.get_width()));
+    engine.print(width - 12, 0, &format!("Frame: {}", engine.frame_count));
 
-fn draw_first_tab<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let chunks = Layout::default()
-        .constraints([Constraint::Percentage(100)])
-        .split(area);
-    draw_files(f, app, chunks[0]);
     if app.popup.visible {
-        draw_popup(f, app, area, 20, 20)
+        draw_popup(app, engine, height, width)
     }
 }
 
-fn draw_popup<B: Backend>(
-    f: &mut Frame<B>,
-    app: &mut App,
-    area: Rect,
-    percent_x: u16,
-    percent_y: u16,
-) {
-    let block = Block::default()
-        .title(app.popup.title)
-        .borders(Borders::ALL);
-    let vertical = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(
-            [
-                Constraint::Percentage((100 - percent_y) / 2),
-                Constraint::Percentage(percent_y),
-                Constraint::Percentage((100 - percent_y) / 2),
-            ]
-            .as_ref(),
-        )
-        .split(area);
-
-    let horizontal = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(
-            [
-                Constraint::Percentage((100 - percent_x) / 2),
-                Constraint::Percentage(percent_x),
-                Constraint::Percentage((100 - percent_x) / 2),
-            ]
-            .as_ref(),
-        )
-        .split(vertical[1])[1];
-    match app.popup.popup_type {
-        PopupType::DeleteFile => draw_delete_popup(f, app, horizontal, block),
-        _ => {}
+fn draw_files(app: &App, engine: &mut ConsoleEngine, height: usize) {
+    let diff: usize;
+    // If user curser goes beyond the border
+    if app.files.state.selected.unwrap() > height {
+        diff = app.files.state.selected.unwrap() - height-1;
+        for a in diff..app.files.files.len() {
+            if app.files.state.selected.unwrap() == a {
+                engine.set_pxl(1, (height+1) as i32, pxl_fg('>', Color::Cyan));
+            }
+            engine.print(3, (a - diff) as i32, &app.files.files[a].name)
+        }
+    } else {
+        for a in 0..app.files.files.len() {
+            if app.files.state.selected.unwrap() == a {
+                engine.set_pxl(1, (a + 1) as i32, pxl_fg('>', Color::Cyan));
+            }
+            engine.print(3, (a + 1) as i32, &app.files.files[a].name)
+        }
     }
 }
 
-fn draw_delete_popup<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect, block: Block) {
-    f.render_widget(Clear, area);
-    f.render_widget(block, area);
-    draw_popup_choices(f, app, area)
+fn draw_popup(app: &App, engine: &mut ConsoleEngine, height: i32, width: i32) {
+    let borders = calculate_popup_borders(height, width, 6, 34);
+    engine.rect_border(borders["start_x"], borders["start_y"], borders["end_x"], borders["end_y"], BorderStyle::new_light());
+    engine.print(borders["start_x"]+3, borders["start_y"], app.popup.title);
+    for a in 0..=1 {
+        if app.popup.state.selected.unwrap() == a {
+            engine.set_pxl(borders["end_x"]-11, borders["end_y"]-2+(a as i32), pxl_fg('>', Color::Cyan));
+        }
+        engine.print(borders["end_x"]-9, borders["end_y"]-2+(a as i32), &format!("{}", app.popup.choices[a]));
+    }
 }
 
-fn draw_files<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let files: Vec<Row> = app
-        .files
-        .files
-        .iter()
-        .map(|file| Row::new(vec![file.name.as_str(), file.size.as_str()]))
-        .collect();
-    let table = Table::new(files)
-        .block(
-            Block::default()
-                .borders(Borders::ALL)
-                .title(app.default_path.as_ref()),
-        )
-        .header(Row::new(vec!["Name", "Size"]).bottom_margin(1))
-        .widths(&[Constraint::Length(15), Constraint::Length(15)])
-        .highlight_style(Style::default().add_modifier(Modifier::BOLD))
-        .highlight_symbol("> ");
-    f.render_stateful_widget(table, area, &mut app.files.state);
+fn calculate_popup_borders(height: i32, width: i32, popup_height: i32, popup_width: i32) -> HashMap<&'static str, i32> {
+    let x_center = width/2;
+    let y_center = height/2;
+    HashMap::from([
+        ("start_x", x_center-popup_width/2),
+        ("start_y", y_center-popup_height/2),
+        ("end_x", x_center+popup_width/2),
+        ("end_y", y_center+popup_height/2),
+    ])
 }
-
-fn draw_popup_choices<B: Backend>(f: &mut Frame<B>, app: &mut App, area: Rect) {
-    let position = relative_position(60, 60, area);
-    let list = Table::new(vec![Row::new(vec!["Cancel"]), Row::new(vec!["Confirm"])])
-        .widths(&[Constraint::Length(15), Constraint::Length(15)])
-        .highlight_style(Style::default().add_modifier(Modifier::BOLD));
-
-    f.render_stateful_widget(list, position, &mut app.popup.state);
-}
-
-
-
-fn relative_position(percent_x: u16, percent_y: u16, area: Rect) -> Rect {
-    let vertical = Layout::default()
-        .direction(Direction::Vertical)
-        .constraints(
-            [
-                Constraint::Percentage(percent_y),
-                Constraint::Percentage(percent_y),
-            ]
-            .as_ref(),
-        )
-        .split(area);
-    let horizontal = Layout::default()
-        .direction(Direction::Horizontal)
-        .constraints(
-            [
-                Constraint::Percentage(percent_x),
-                Constraint::Percentage(percent_x),
-            ]
-            .as_ref(),
-        )
-        .split(vertical[1])[1];
-    horizontal
-}
- 

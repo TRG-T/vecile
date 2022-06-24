@@ -2,14 +2,13 @@
 name = "filemng"
 version = "1.0.0"
 authors = ["TRGT"]
-edition = "2018"
+edition = "2021"
 
 [dependencies]
-tui = "0.18"
+console_engine = {version = "2.4.0", features = ["event", "form"]}
 crossterm = "0.23"
 filesize = "0.2"
 fs_extra = "1.2"
-rustbox = "0.11.0"
 
 
 

@@ -18,17 +18,17 @@ pub fn draw(app: &App, engine: &mut ConsoleEngine, height: i32, width: i32) {
 fn draw_files(app: &App, engine: &mut ConsoleEngine, height: usize) {
     let diff: usize;
     // If user curser goes beyond the border
-    if app.files.state.selected.unwrap() > height {
-        diff = app.files.state.selected.unwrap() - height-1;
+    if app.files.state.selected > height {
+        diff = app.files.state.selected - height-1;
         for a in diff..app.files.files.len() {
-            if app.files.state.selected.unwrap() == a {
+            if app.files.state.selected == a {
                 engine.set_pxl(1, (height+1) as i32, pxl_fg('>', Color::Cyan));
             }
             engine.print(3, (a - diff) as i32, &app.files.files[a].name)
         }
     } else {
         for a in 0..app.files.files.len() {
-            if app.files.state.selected.unwrap() == a {
+            if app.files.state.selected == a {
                 engine.set_pxl(1, (a + 1) as i32, pxl_fg('>', Color::Cyan));
             }
             engine.print(3, (a + 1) as i32, &app.files.files[a].name)
@@ -41,7 +41,7 @@ fn draw_popup(app: &App, engine: &mut ConsoleEngine, height: i32, width: i32) {
     engine.rect_border(borders["start_x"], borders["start_y"], borders["end_x"], borders["end_y"], BorderStyle::new_light());
     engine.print(borders["start_x"]+3, borders["start_y"], app.popup.title);
     for a in 0..=1 {
-        if app.popup.state.selected.unwrap() == a {
+        if app.popup.state.selected == a {
             engine.set_pxl(borders["end_x"]-11, borders["end_y"]-2+(a as i32), pxl_fg('>', Color::Cyan));
         }
         engine.print(borders["end_x"]-9, borders["end_y"]-2+(a as i32), &format!("{}", app.popup.choices[a]));

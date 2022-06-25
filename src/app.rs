@@ -16,25 +16,25 @@ fn convert_size(size: u64) -> String {
     file_size
 }
 
+pub struct State {
+    pub selected: usize,
+}
+
+impl State {
+    pub fn new() -> State {
+        State { selected: 0 }
+    }
+
+    pub fn select(&mut self, index: usize) {
+        self.selected = index;
+    }
+}
+
 pub struct File {
     pub name: String,
     pub is_dir: bool,
     pub size: String,
     pub path: String,
-}
-
-pub struct State {
-    pub selected: Option<usize>,
-}
-
-impl State {
-    pub fn new() -> State {
-        State { selected: Some(0) }
-    }
-
-    pub fn select(&mut self, index: Option<usize>) {
-        self.selected = index;
-    }
 }
 
 pub struct Files {
@@ -47,7 +47,7 @@ impl Files {
         let mut files: Vec<File> = vec![];
         let paths = read_dir(&path).unwrap();
         for file in paths {
-            let file_name = file
+            let mut file_name = file
                 .as_ref()
                 .unwrap()
                 .file_name()
@@ -55,21 +55,17 @@ impl Files {
                 .to_string();
             let file_path = path.to_owned() + file_name.as_str();
             let size = convert_size(get_size(&file_path).unwrap());
-            if metadata(file.as_ref().unwrap().path()).unwrap().is_dir() {
-                files.push(File {
-                    name: file_name + "/",
-                    is_dir: true,
-                    size,
-                    path: file_path.to_string(),
-                })
-            } else {
-                files.push(File {
-                    name: file_name,
-                    is_dir: false,
-                    size,
-                    path: file_path.to_string(),
-                })
+            let is_dir = metadata(file.as_ref().unwrap().path()).unwrap().is_dir();
+            if is_dir {
+                file_name = file_name + "/";
             }
+
+            files.push(File {
+                name: file_name,
+                is_dir,
+                size,
+                path: file_path.to_string(),
+            })
         }
         Files {
             state: State::new(),
@@ -78,31 +74,24 @@ impl Files {
     }
 
     pub fn next(&mut self) {
-        let i = match self.state.selected {
-            Some(i) => {
-                if i >= self.files.len() - 1 {
-                    0
-                } else {
-                    i + 1
-                }
-            }
-            None => 0,
+        let i = if self.state.selected >= self.files.len()-1 {
+            0
+        } else {
+            self.state.selected+1
         };
-        self.state.select(Some(i));
+        self.state.select(i);
     }
 
     pub fn previous(&mut self) {
-        let i = match self.state.selected {
-            Some(i) => {
-                if i == 0 {
-                    self.files.len() - 1
-                } else {
-                    i - 1
-                }
-            }
-            None => 0,
+        if self.state.selected == 0 {
+            return;
+        }
+        let i = if self.state.selected == self.files.len()-1 {
+            self.files.len()-1
+        } else {
+            self.state.selected-1
         };
-        self.state.select(Some(i));
+        self.state.select(i);
     }
 }
 
@@ -133,7 +122,7 @@ impl<'a> App<'a> {
 
     pub fn on_up(&mut self) {
         if self.popup.visible {
-            self.popup.state.select(Some(0));
+            self.popup.state.select(0);
         } else {
             self.files.previous();
         }
@@ -141,7 +130,7 @@ impl<'a> App<'a> {
 
     pub fn on_down(&mut self) {
         if self.popup.visible {
-            self.popup.state.select(Some(1));
+            self.popup.state.select(1);
         } else {
             self.files.next();
         }
@@ -179,31 +168,29 @@ impl<'a> App<'a> {
     }
 
     pub fn on_enter(&mut self) {
-        if !self.popup.visible && self.files.state.selected != None {
-            let file = &self.files.files[self.files.state.selected.unwrap()];
+        if !self.popup.visible {
+            let file = &self.files.files[self.files.state.selected];
             if file.is_dir {
                 self.path.push_str(&file.name);
                 self.files = Files::new(&mut self.path)
             }
         } else {
-            match self.popup.state.selected {
-                Some(0) => self.popup.visible = false,
-                Some(1) => {
-                    let file = &self.files.files[self.files.state.selected.unwrap()];
+            if self.popup.state.selected == 0 {
+                self.popup.visible = false;
+            } else {
+                let file = &self.files.files[self.files.state.selected];
                     if file.is_dir {
                         remove_dir_all(&file.path).ok();
                     } else {
                         remove_file(&file.path).ok();
                     }
                     self.files = Files::new(&mut self.path);
-                }
-                _ => {}
             }
         }
     }
 
     pub fn on_esc(&mut self) {
-        if self.path == "./" {
+        if self.path == "./" || self.popup.visible {
             return;
         };
         self.path.pop();

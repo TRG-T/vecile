@@ -1,11 +1,13 @@
 mod app;
+use std::io::Error;
+
 use crate::app::App;
 mod ui;
 use crate::ui::draw;
 use console_engine::{events::Event, KeyCode};
 use crossterm::terminal;
 
-fn main() {
+fn main() -> Result<(), Error> {
     let mut engine = console_engine::ConsoleEngine::init_fill(30).unwrap();
     let mut app = App::new("vecile");
     let mut height: u32;
@@ -29,13 +31,15 @@ fn main() {
                 KeyCode::Up => app.on_up(),
                 KeyCode::Left => app.on_left(),
                 KeyCode::Right => app.on_right(),
-                KeyCode::Enter => app.on_enter(),
+                KeyCode::Enter => app.on_enter()?,
                 KeyCode::Esc => app.on_esc(),
+                KeyCode::Backspace => app.on_backspace(),
                 _ => {}
             },
             _ => {}
         }
     }
+    Ok(())
 }
 
 fn convert_size_type(tuple: (u16, u16)) -> (u32, u32) {

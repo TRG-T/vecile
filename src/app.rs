@@ -1,5 +1,8 @@
 use fs_extra::dir::get_size;
-use std::fs::{metadata, read_dir, remove_dir_all, remove_file, rename};
+use std::{
+    fs::{metadata, read_dir, remove_dir_all, remove_file, rename},
+    io::Error,
+};
 
 fn convert_size(size: u64) -> String {
     let mut file_size: String;
@@ -37,6 +40,38 @@ pub struct File {
     pub path: String,
 }
 
+impl File {
+    pub fn new(name: String, is_dir: bool, size: String, path: String) -> File {
+        File {
+            name,
+            is_dir,
+            size,
+            path,
+        }
+    }
+
+    pub fn delete(&self) -> Result<(), Error> {
+        if self.is_dir {
+            remove_dir_all(&self.path)?;
+        } else {
+            remove_file(&self.path)?;
+        }
+        Ok(())
+    }
+
+    pub fn rename(&mut self, new_name: String) -> Result<(), Error> {
+        rename(&self.name, &new_name)?;
+        self.name = new_name;
+        if self.is_dir {
+            self.path.pop();
+            self.name += "/"
+        }
+        let (start, _) = self.path.rsplit_once('/').unwrap();
+        self.path = start.to_string() + "/" + self.name.as_str();
+        Ok(())
+    }
+}
+
 pub struct Files {
     pub state: State,
     pub files: Vec<File>,
@@ -60,12 +95,7 @@ impl Files {
                 file_name += "/";
             }
 
-            files.push(File {
-                name: file_name,
-                is_dir,
-                size,
-                path: file_path.to_string(),
-            })
+            files.push(File::new(file_name, is_dir, size, file_path.to_string()));
         }
         Files {
             state: State::new(),
@@ -115,7 +145,7 @@ impl<'a> App<'a> {
                 false,
                 State::new(),
                 ["default", "default"],
-                None,
+                String::from(""),
             ),
             files: Files::new(&mut String::from("./")),
         }
@@ -143,7 +173,7 @@ impl<'a> App<'a> {
 
     pub fn on_key(&mut self, c: char) {
         if self.popup.visible {
-            self.popup.input.as_mut().unwrap().push(c);
+            self.popup.input.push(c);
         } else {
             match c {
                 'q' => {
@@ -156,7 +186,7 @@ impl<'a> App<'a> {
                         true,
                         State::new(),
                         ["Cancel", "Delete"],
-                        None,
+                        String::from(""),
                     );
                 }
                 'r' => {
@@ -166,7 +196,7 @@ impl<'a> App<'a> {
                         true,
                         State::new(),
                         ["Cancel", "Confirm"],
-                        Some(String::from("")),
+                        String::from(""),
                     );
                 }
                 _ => {}
@@ -174,34 +204,32 @@ impl<'a> App<'a> {
         }
     }
 
-    pub fn on_enter(&mut self) {
+    pub fn on_enter(&mut self) -> Result<(), Error> {
         if !self.popup.visible {
             let file = &self.files.files[self.files.state.selected];
             if file.is_dir {
                 self.path.push_str(&file.name);
-                self.files = Files::new(&mut self.path)
+                self.files = Files::new(&mut self.path);
             }
+            Ok(())
         } else {
             if self.popup.state.selected == 0 {
                 self.popup.visible = false;
-                return;
+                return Ok(())
             }
-            let file = &self.files.files[self.files.state.selected];
+            let file = &mut self.files.files[self.files.state.selected];
             match self.popup.popup_type {
                 PopupType::DeleteFile => {
-                    if file.is_dir {
-                        remove_dir_all(&file.path).unwrap();
-                    } else {
-                        remove_file(&file.path).unwrap();
-                    }
+                    file.delete()?;
+                    self.files = Files::new(&mut self.path);
                 }
                 PopupType::RenameFile => {
-                    rename(&file.name, self.popup.input.as_ref().unwrap()).unwrap();
+                    file.rename(self.popup.input.to_string())?;
                 }
                 _ => {}
             }
-            self.files = Files::new(&mut self.path);
             self.popup.visible = false;
+            Ok(())
         }
     }
 
@@ -214,6 +242,14 @@ impl<'a> App<'a> {
         self.path = start.to_string();
         self.path.push('/');
         self.files = Files::new(&mut self.path)
+    }
+
+    pub fn on_backspace(&mut self) {
+        if self.popup.visible {
+            if let PopupType::RenameFile = self.popup.popup_type {
+                self.popup.input.pop();
+            }
+        }
     }
 }
 
@@ -229,7 +265,7 @@ pub struct Popup<'a> {
     pub popup_type: PopupType,
     pub visible: bool,
     pub state: State,
-    pub input: Option<String>,
+    pub input: String,
 }
 
 impl<'a> Popup<'a> {
@@ -239,7 +275,7 @@ impl<'a> Popup<'a> {
         visible: bool,
         state: State,
         choices: [&'a str; 2],
-        input: Option<String>,
+        input: String,
     ) -> Popup<'a> {
         Popup {
             title,

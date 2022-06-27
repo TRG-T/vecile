@@ -39,7 +39,8 @@ fn draw_files(app: &App, engine: &mut ConsoleEngine, height: usize) {
             if app.files.state.selected == a {
                 engine.set_pxl(1, (a + 1) as i32, pxl_fg('>', Color::Cyan));
             }
-            engine.print(3, (a + 1) as i32, &app.files.files[a].name)
+            engine.print(3, (a + 1) as i32, &app.files.files[a].name);
+            //engine.print(20, (a + 1) as i32, &app.files.files[a].path)
         }
     }
 }
@@ -63,7 +64,7 @@ fn draw_popup(app: &App, engine: &mut ConsoleEngine, height: i32, width: i32) {
 
 fn draw_popup_input(app: &App, engine: &mut ConsoleEngine, borders: &HashMap<&'static str, i32>) {
     engine.line(borders["start_x"]+3, borders["start_y"]+2, borders["end_x"]-3, borders["start_y"]+2, pxl_fg('_', Color::White));
-    engine.print(borders["start_x"]+3, borders["start_y"]+2, app.popup.input.as_ref().unwrap());
+    engine.print(borders["start_x"]+3, borders["start_y"]+2, app.popup.input.as_ref());
 }
 
 fn draw_popup_choices(app: &App, engine: &mut ConsoleEngine, borders: HashMap<&'static str, i32>) {

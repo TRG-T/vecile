@@ -10,7 +10,7 @@
 
 - Standardised popup system
 
-- Rename, move files
+- Move files
 
 ## Running the app
 

@@ -1,5 +1,5 @@
 use fs_extra::dir::get_size;
-use std::fs::{metadata, read_dir, remove_dir_all, remove_file};
+use std::fs::{metadata, read_dir, remove_dir_all, remove_file, rename};
 
 fn convert_size(size: u64) -> String {
     let mut file_size: String;
@@ -57,7 +57,7 @@ impl Files {
             let size = convert_size(get_size(&file_path).unwrap());
             let is_dir = metadata(file.as_ref().unwrap().path()).unwrap().is_dir();
             if is_dir {
-                file_name = file_name + "/";
+                file_name += "/";
             }
 
             files.push(File {
@@ -74,10 +74,10 @@ impl Files {
     }
 
     pub fn next(&mut self) {
-        let i = if self.state.selected >= self.files.len()-1 {
+        let i = if self.state.selected >= self.files.len() - 1 {
             0
         } else {
-            self.state.selected+1
+            self.state.selected + 1
         };
         self.state.select(i);
     }
@@ -86,10 +86,10 @@ impl Files {
         if self.state.selected == 0 {
             return;
         }
-        let i = if self.state.selected == self.files.len()-1 {
-            self.files.len()-1
+        let i = if self.state.selected == self.files.len() - 1 {
+            self.files.len() - 1
         } else {
-            self.state.selected-1
+            self.state.selected - 1
         };
         self.state.select(i);
     }
@@ -115,6 +115,7 @@ impl<'a> App<'a> {
                 false,
                 State::new(),
                 ["default", "default"],
+                None,
             ),
             files: Files::new(&mut String::from("./")),
         }
@@ -141,29 +142,35 @@ impl<'a> App<'a> {
     pub fn on_left(&mut self) {}
 
     pub fn on_key(&mut self, c: char) {
-        match c {
-            'q' => {
-                self.should_quit = true;
+        if self.popup.visible {
+            self.popup.input.as_mut().unwrap().push(c);
+        } else {
+            match c {
+                'q' => {
+                    self.should_quit = true;
+                }
+                'd' => {
+                    self.popup = Popup::new(
+                        "Delete file",
+                        PopupType::DeleteFile,
+                        true,
+                        State::new(),
+                        ["Cancel", "Delete"],
+                        None,
+                    );
+                }
+                'r' => {
+                    self.popup = Popup::new(
+                        "Rename file",
+                        PopupType::RenameFile,
+                        true,
+                        State::new(),
+                        ["Cancel", "Confirm"],
+                        Some(String::from("")),
+                    );
+                }
+                _ => {}
             }
-            'd' => {
-                self.popup = Popup::new(
-                    "Delete file",
-                    PopupType::DeleteFile,
-                    true,
-                    State::new(),
-                    ["Cancel", "Delete"],
-                );
-            }
-            'r' => {
-                self.popup = Popup::new(
-                    "Rename file",
-                    PopupType::RenameFile,
-                    true,
-                    State::new(),
-                    ["Cancel", "Confirm"],
-                );
-            }
-            _ => {}
         }
     }
 
@@ -177,15 +184,24 @@ impl<'a> App<'a> {
         } else {
             if self.popup.state.selected == 0 {
                 self.popup.visible = false;
-            } else {
-                let file = &self.files.files[self.files.state.selected];
-                    if file.is_dir {
-                        remove_dir_all(&file.path).ok();
-                    } else {
-                        remove_file(&file.path).ok();
-                    }
-                    self.files = Files::new(&mut self.path);
+                return;
             }
+            let file = &self.files.files[self.files.state.selected];
+            match self.popup.popup_type {
+                PopupType::DeleteFile => {
+                    if file.is_dir {
+                        remove_dir_all(&file.path).unwrap();
+                    } else {
+                        remove_file(&file.path).unwrap();
+                    }
+                }
+                PopupType::RenameFile => {
+                    rename(&file.name, self.popup.input.as_ref().unwrap()).unwrap();
+                }
+                _ => {}
+            }
+            self.files = Files::new(&mut self.path);
+            self.popup.visible = false;
         }
     }
 
@@ -213,6 +229,7 @@ pub struct Popup<'a> {
     pub popup_type: PopupType,
     pub visible: bool,
     pub state: State,
+    pub input: Option<String>,
 }
 
 impl<'a> Popup<'a> {
@@ -222,6 +239,7 @@ impl<'a> Popup<'a> {
         visible: bool,
         state: State,
         choices: [&'a str; 2],
+        input: Option<String>,
     ) -> Popup<'a> {
         Popup {
             title,
@@ -229,6 +247,9 @@ impl<'a> Popup<'a> {
             visible,
             state,
             choices,
+            input,
         }
     }
 }
+
+impl State {}

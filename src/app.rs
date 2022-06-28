@@ -50,13 +50,12 @@ impl File {
         }
     }
 
-    pub fn delete(&self) -> Result<(), Error> {
+    pub fn delete(&self) {
         if self.is_dir {
-            remove_dir_all(&self.path)?;
+            remove_dir_all(&self.path).unwrap();
         } else {
-            remove_file(&self.path)?;
+            remove_file(&self.path).unwrap();
         }
-        Ok(())
     }
 
     pub fn rename(&mut self, new_name: String) -> Result<(), Error> {
@@ -82,15 +81,10 @@ impl Files {
         let mut files: Vec<File> = vec![];
         let paths = read_dir(&path).unwrap();
         for file in paths {
-            let mut file_name = file
-                .as_ref()
-                .unwrap()
-                .file_name()
-                .to_string_lossy()
-                .to_string();
-            let file_path = path.to_owned() + file_name.as_str();
+            let mut file_name = file.unwrap().file_name().into_string().unwrap();
+            let file_path = path.to_owned() + &file_name;
             let size = convert_size(get_size(&file_path).unwrap());
-            let is_dir = metadata(file.as_ref().unwrap().path()).unwrap().is_dir();
+            let is_dir = metadata(&file_path).unwrap().is_dir();
             if is_dir {
                 file_name += "/";
             }
@@ -103,8 +97,8 @@ impl Files {
         }
     }
 
-    pub fn next(&mut self) {
-        let i = if self.state.selected >= self.files.len() - 1 {
+    pub fn next(&mut self) {atch arm self
+        let i = if self.state.selected == self.files.len() - 1 {
             0
         } else {
             self.state.selected + 1
@@ -113,11 +107,8 @@ impl Files {
     }
 
     pub fn previous(&mut self) {
-        if self.state.selected == 0 {
-            return;
-        }
-        let i = if self.state.selected == self.files.len() - 1 {
-            self.files.len() - 1
+        let i = if self.state.selected == 0 {
+            0
         } else {
             self.state.selected - 1
         };
@@ -140,11 +131,11 @@ impl<'a> App<'a> {
             should_quit: false,
             path: String::from("./"),
             popup: Popup::new(
-                "default",
+                "",
                 PopupType::Default,
                 false,
                 State::new(),
-                ["default", "default"],
+                ["", ""],
                 String::from(""),
             ),
             files: Files::new(&mut String::from("./")),
@@ -205,8 +196,8 @@ impl<'a> App<'a> {
     }
 
     pub fn on_enter(&mut self) -> Result<(), Error> {
+        let file = &mut self.files.files[self.files.state.selected];
         if !self.popup.visible {
-            let file = &self.files.files[self.files.state.selected];
             if file.is_dir {
                 self.path.push_str(&file.name);
                 self.files = Files::new(&mut self.path);
@@ -215,12 +206,11 @@ impl<'a> App<'a> {
         } else {
             if self.popup.state.selected == 0 {
                 self.popup.visible = false;
-                return Ok(())
+                return Ok(());
             }
-            let file = &mut self.files.files[self.files.state.selected];
             match self.popup.popup_type {
                 PopupType::DeleteFile => {
-                    file.delete()?;
+                    file.delete();
                     self.files = Files::new(&mut self.path);
                 }
                 PopupType::RenameFile => {
@@ -239,8 +229,7 @@ impl<'a> App<'a> {
         };
         self.path.pop();
         let (start, _) = self.path.rsplit_once('/').unwrap();
-        self.path = start.to_string();
-        self.path.push('/');
+        self.path = start.to_string() + "/";
         self.files = Files::new(&mut self.path)
     }
 
